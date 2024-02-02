@@ -1,0 +1,40 @@
+// main.js
+const firebaseConfig = {
+    apiKey: "AIzaSyDHPc2JUeqZJ3O1F6jlccj8bH7j0jvypXQ",
+    authDomain: "fofa-75a9a.firebaseapp.com",
+    databaseURL: "https://fofa-75a9a-default-rtdb.firebaseio.com",
+    projectId: "fofa-75a9a",
+    storageBucket: "fofa-75a9a.appspot.com",
+    messagingSenderId: "794310075793",
+    appId: "1:794310075793:web:9d22164a58883431642630",
+    measurementId: "G-P322FJK74H"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const database = firebase.database();
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then((stream) => {
+        localVideo.srcObject = stream;
+
+        const peerConnection = new RTCPeerConnection();
+
+        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                database.ref('candidates').push(JSON.stringify(event.candidate));
+            }
+        };
+
+        peerConnection.createOffer()
+            .then(offer => peerConnection.setLocalDescription(offer))
+            .then(() => {
+                database.ref('offer').set(JSON.stringify(peerConnection.localDescription));
+            })
+            .catch(error => console.error("خطأ في إنشاء العرض:", error));
+    })
+    .catch(error => console.error("خطأ في الوصول إلى الوسائط:", error));
